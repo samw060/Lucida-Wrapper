@@ -6,29 +6,25 @@ import java.util.Scanner;
 
 public class Main {
     static final String BASE_URL = "https://lucida.to";
-    static String songUrl;
     static final String OUTPUT_DIR = "C:\\Users\\samwi\\OneDrive\\Documents\\Music";
+    static final HttpClient client = HttpClient.newBuilder()
+            .followRedirects(HttpClient.Redirect.ALWAYS)
+            .build();
 
     public static void main(String[] args) {
-        while (true){
+        Scanner reader = new Scanner(System.in);
+        while (true) {
             System.out.println("Enter song url: ");
-            Scanner reader = new Scanner(System.in);
             String newSongUrl = reader.nextLine();
-
-            try{
+            try {
                 download(newSongUrl);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                System.out.println("Error: " + e.getMessage());
             }
-
         }
     }
 
-    private static void download(String url) throws Exception{
-        HttpClient client = HttpClient.newBuilder()
-                .followRedirects(HttpClient.Redirect.ALWAYS)
-                .build();
-
+    private static void download(String url) throws Exception {
         // Step 1 - kick off the download
         String loadBody = String.format(
                 "{" +
@@ -41,7 +37,7 @@ public class Main {
                         "\"account\":{\"type\":\"country\",\"id\":\"auto\"}," +
                         "\"upload\":{\"enabled\":false,\"service\":\"pixeldrain\"}" +
                         "}",
-                url, "i_hQhew5oE85eQ2T48B5cTSgJaQ", 1776210013
+                url
         );
 
         String encodedPath = URLEncoder.encode("/api/fetch/stream/v2", "UTF-8");
@@ -49,7 +45,7 @@ public class Main {
         HttpRequest streamRequest = HttpRequest.newBuilder()
                 .uri(URI.create(BASE_URL + "/api/load?url=" + encodedPath))
                 .header("Content-Type", "application/json")
-                .header("User-Agent", "Mozilla/5.0") // Dont think this is needed
+                .header("User-Agent", "Mozilla/5.0")
                 .POST(HttpRequest.BodyPublishers.ofString(loadBody))
                 .build();
 
@@ -58,6 +54,7 @@ public class Main {
 
         System.out.println("Stream response: " + streamResponse.body());
 
+        // Step 2 - extract server and handoff ID
         String responseBody = streamResponse.body();
         String handoffId = responseBody.split("\"handoff\":\"")[1].split("\"")[0];
         String server = responseBody.split("\"server\":\"")[1].split("\"")[0];
@@ -109,8 +106,5 @@ public class Main {
 
         client.send(downloadRequest, HttpResponse.BodyHandlers.ofFile(outputPath));
         System.out.println("Saved to: " + outputPath);
-
     }
-
-
 }
